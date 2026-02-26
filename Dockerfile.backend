@@ -1,0 +1,6 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY backend.js package.json ./
+RUN npm ci --production
+EXPOSE 4000
+CMD ["node","backend.js"]
