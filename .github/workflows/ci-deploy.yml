@@ -13,8 +13,15 @@ jobs:
       - name: Build frontend image
         run: |
           docker build -f frontend/Dockerfile -t ghcr.io/${{ github.repository_owner }}/quick-board-frontend:latest ./frontend
-      - name: Login and Push images
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Push backend
         run: |
-          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
           docker push ghcr.io/${{ github.repository_owner }}/quick-board-backend:latest
+      - name: Push frontend
+        run: |
           docker push ghcr.io/${{ github.repository_owner }}/quick-board-frontend:latest
