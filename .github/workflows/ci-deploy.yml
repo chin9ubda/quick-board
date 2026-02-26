@@ -1,0 +1,20 @@
+name: CI Build and Push
+on:
+  push:
+    branches: [ master ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: |
+          docker build -f Dockerfile.backend -t ghcr.io/${{ github.repository_owner }}/quick-board-backend:latest .
+      - name: Build frontend image
+        run: |
+          docker build -f frontend/Dockerfile -t ghcr.io/${{ github.repository_owner }}/quick-board-frontend:latest ./frontend
+      - name: Login and Push images
+        run: |
+          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+          docker push ghcr.io/${{ github.repository_owner }}/quick-board-backend:latest
+          docker push ghcr.io/${{ github.repository_owner }}/quick-board-frontend:latest
