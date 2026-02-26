@@ -1,0 +1,35 @@
+name: Deploy to self-hosted
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Project name under /data/dev' 
+        required: false
+        default: 'quick-board'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      PROJECT: ${{ github.event.inputs.project || 'quick-board' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Deploy services
+        run: |
+          set -euo pipefail
+          SERVICES=(backend frontend)
+          for svc in "${SERVICES[@]}"; do
+            echo "Deploying $svc for project $PROJECT"
+            docker pull ghcr.io/${{ github.repository_owner }}/quick-board-$svc:latest || true
+            cd /data/dev/${PROJECT}/$svc
+            docker compose pull || true
+            docker compose up -d
+          done
