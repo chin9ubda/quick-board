@@ -29,8 +29,8 @@ jobs:
           echo "Deploying $PROJECT"
           # pull frontend/backend images for quick-board (pattern)
           if [ "$PROJECT" = "quick-board" ]; then
-            docker pull ghcr.io/${{ github.repository_owner }}/quick-board-frontend:latest || true
-            docker pull ghcr.io/${{ github.repository_owner }}/quick-board-backend:latest || true
+            docker pull ghcr.io/${{ github.repository_owner }}/${PROJECT}-frontend:latest || true
+            docker pull ghcr.io/${{ github.repository_owner }}/${PROJECT}-backend:latest || true
             cd /data/dev/$PROJECT/services/frontend && docker compose pull || true
             cd /data/dev/$PROJECT/services/frontend && docker compose up -d || true
             cd /data/dev/$PROJECT/services/backend && docker compose pull || true
