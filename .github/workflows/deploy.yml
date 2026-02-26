@@ -1,11 +1,11 @@
-name: Deploy to self-hosted
+name: Deploy to server (central)
 on:
   push:
     branches: [ master ]
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project name under /data/dev' 
+        description: 'project to deploy (quick-board or antibudget)'
         required: false
         default: 'quick-board'
 
@@ -13,7 +13,7 @@ jobs:
   deploy:
     runs-on: self-hosted
     env:
-      PROJECT: ${{ github.event.inputs.project || 'quick-board' }}
+      SERVER_PROJECT_DIR: /data/dev
     steps:
       - uses: actions/checkout@v4
       - name: Login to GHCR
@@ -22,14 +22,25 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_PAT }}
-      - name: Deploy services
+      - name: Pull images and deploy
         run: |
           set -euo pipefail
-          SERVICES=(backend frontend)
-          for svc in "${SERVICES[@]}"; do
-            echo "Deploying $svc for project $PROJECT"
-            docker pull ghcr.io/${{ github.repository_owner }}/quick-board-$svc:latest || true
-            cd /data/dev/${PROJECT}/$svc
-            docker compose pull || true
-            docker compose up -d
-          done
+          PROJECT=${{ github.event.inputs.project || 'quick-board' }}
+          echo "Deploying $PROJECT"
+          # pull frontend/backend images for quick-board (pattern)
+          if [ "$PROJECT" = "quick-board" ]; then
+            docker pull ghcr.io/${{ github.repository_owner }}/quick-board-frontend:latest || true
+            docker pull ghcr.io/${{ github.repository_owner }}/quick-board-backend:latest || true
+            cd /data/dev/$PROJECT/services/frontend && docker compose pull || true
+            cd /data/dev/$PROJECT/services/frontend && docker compose up -d || true
+            cd /data/dev/$PROJECT/services/backend && docker compose pull || true
+            cd /data/dev/$PROJECT/services/backend && docker compose up -d || true
+          elif [ "$PROJECT" = "antibudget" ]; then
+            # antibudget images are local, ensure compose up
+            cd /data/dev/$PROJECT/services/frontend && docker compose pull || true
+            cd /data/dev/$PROJECT/services/frontend && docker compose up -d || true
+            cd /data/dev/$PROJECT/services/backend && docker compose pull || true
+            cd /data/dev/$PROJECT/services/backend && docker compose up -d || true
+          fi
+          # reload central nginx (no config change expected)
+          cd /data/dev/nginx && docker compose up -d
